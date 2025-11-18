@@ -12,7 +12,8 @@ import {
   FileText, 
   Loader2,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Info
 } from 'lucide-react';
 
 export default function Home() {
@@ -45,12 +46,13 @@ export default function Home() {
         body: formData
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Erro ao processar arquivo');
+        throw new Error(data.details || data.error || 'Erro ao processar arquivo');
       }
 
-      const results = await response.json();
-      setAnalysisResults(results);
+      setAnalysisResults(data);
     } catch (err: any) {
       setError(err.message || 'Erro ao analisar projeto');
       setActiveTab('upload');
@@ -158,14 +160,27 @@ export default function Home() {
                   Enviar Projeto para Análise
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400">
-                  Faça upload de plantas em PDF, DWG, DXF ou imagens (PNG, JPG)
+                  Faça upload de plantas em formato de imagem (PNG, JPG, JPEG, WEBP)
                 </p>
+              </div>
+
+              {/* Aviso sobre formatos */}
+              <div className="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                <div className="text-sm">
+                  <p className="font-medium text-blue-900 dark:text-blue-100 mb-1">
+                    Formatos suportados atualmente
+                  </p>
+                  <p className="text-blue-700 dark:text-blue-300">
+                    Apenas imagens (PNG, JPG, JPEG, WEBP) são suportadas. Para arquivos PDF ou DWG, converta para imagem antes de enviar.
+                  </p>
+                </div>
               </div>
 
               <FileUploadZone onFileSelect={handleFileSelect} />
 
               {selectedFile && (
-                <div className="flex items-center justify-between p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
                   <div className="flex items-center gap-3">
                     <CheckCircle2 className="w-5 h-5 text-green-600" />
                     <div>
@@ -295,13 +310,13 @@ export default function Home() {
         {/* Footer Info */}
         <div className="mt-8 p-6 bg-white dark:bg-gray-950 rounded-xl shadow-lg">
           <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">
-            Formatos Suportados
+            Formatos Suportados (Imagens)
           </h3>
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-            {['PDF', 'DWG', 'DXF', 'PNG', 'JPG', 'JPEG'].map(format => (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {['PNG', 'JPG', 'JPEG', 'WEBP'].map(format => (
               <div
                 key={format}
-                className="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg text-center"
+                className="p-3 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border border-green-200 dark:border-green-800 rounded-lg text-center"
               >
                 <p className="font-mono font-semibold text-gray-900 dark:text-gray-100">
                   {format}
@@ -309,6 +324,9 @@ export default function Home() {
               </div>
             ))}
           </div>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-4">
+            💡 <strong>Dica:</strong> Para arquivos PDF ou DWG, tire um print ou exporte como imagem antes de enviar.
+          </p>
         </div>
       </main>
     </div>

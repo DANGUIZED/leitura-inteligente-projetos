@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { Upload, FileText, X } from 'lucide-react';
+import { Upload, FileText, X, FileImage } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface FileUploadZoneProps {
@@ -12,8 +12,8 @@ interface FileUploadZoneProps {
 
 export function FileUploadZone({ 
   onFileSelect, 
-  acceptedFormats = ['.pdf', '.dwg', '.dxf', '.png', '.jpg', '.jpeg'],
-  maxSizeMB = 50 
+  acceptedFormats = ['.pdf', '.png', '.jpg', '.jpeg', '.webp'],
+  maxSizeMB = 2000000 
 }: FileUploadZoneProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -78,6 +78,8 @@ export function FileUploadZone({
     setError('');
   };
 
+  const isPDF = selectedFile?.type === 'application/pdf';
+
   return (
     <div className="w-full">
       <div
@@ -118,24 +120,34 @@ export function FileUploadZone({
                   key={format}
                   className="px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded-full text-xs text-gray-600 dark:text-gray-400"
                 >
-                  {format.toUpperCase()}
+                  {format.toUpperCase().replace('.', '')}
                 </span>
               ))}
             </div>
             <p className="text-xs text-gray-400 mt-4">
               Tamanho máximo: {maxSizeMB}MB
             </p>
+            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <p className="text-xs text-blue-700 dark:text-blue-300 text-center">
+                💡 <strong>Suporte completo a PDF!</strong> Envie plantas em PDF ou imagens (PNG, JPG, WEBP)
+              </p>
+            </div>
           </label>
         ) : (
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <FileText className="w-10 h-10 text-green-600" />
+              {isPDF ? (
+                <FileText className="w-10 h-10 text-red-600" />
+              ) : (
+                <FileImage className="w-10 h-10 text-green-600" />
+              )}
               <div>
                 <p className="font-medium text-gray-900 dark:text-gray-100">
                   {selectedFile.name}
                 </p>
                 <p className="text-sm text-gray-500">
                   {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                  {isPDF && <span className="ml-2 text-red-600 font-medium">• PDF</span>}
                 </p>
               </div>
             </div>

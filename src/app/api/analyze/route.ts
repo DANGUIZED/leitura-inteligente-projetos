@@ -65,27 +65,14 @@ export async function POST(request: NextRequest) {
 
     // Processamento específico para PDF
     if (isPDF) {
-      try {
-        // Importação dinâmica do pdf-parse
-        const pdfParse = (await import('pdf-parse')).default;
-        
-        // Extrai texto do PDF
-        const pdfData = await pdfParse(buffer);
-        const pdfText = pdfData.text;
-        const numPages = pdfData.numpages;
+      // Para PDFs, vamos usar análise visual direta com GPT-4 Vision
+      // Isso evita problemas com pdf-parse e funciona melhor para plantas técnicas
+      const base64 = buffer.toString('base64');
+      const dataUrl = `data:application/pdf;base64,${base64}`;
 
-        // Converte primeira página para base64 para análise visual
-        // (OpenAI não aceita PDF diretamente, então usamos o texto + contexto)
-        const base64 = buffer.toString('base64');
-        const dataUrl = `data:application/pdf;base64,${base64}`;
+      const pdfPrompt = `Você é um analista técnico especializado em projetos de engenharia e arquitetura conforme normas ABNT.
 
-        // Prompt especializado para PDF com texto extraído
-        const pdfPrompt = `Você é um analista técnico especializado em projetos de engenharia e arquitetura conforme normas ABNT.
-
-Este é um PDF de projeto técnico com ${numPages} página(s).
-
-TEXTO EXTRAÍDO DO PDF:
-${pdfText.substring(0, 8000)} ${pdfText.length > 8000 ? '...(texto truncado)' : ''}
+Este é um PDF de projeto técnico. Analise TODAS as páginas visíveis.
 
 Analise este projeto técnico e forneça um relatório COMPLETO e ESTRUTURADO em formato JSON com as seguintes informações:
 
@@ -93,7 +80,7 @@ Analise este projeto técnico e forneça um relatório COMPLETO e ESTRUTURADO em
    - Tipo de projeto (arquitetônico, elétrico, hidráulico, estrutural, sanitário, PPCI)
    - Escala detectada (ex: 1:50, 1:75, 1:100)
    - Nome da prancha/projeto se visível
-   - Número de páginas analisadas
+   - Número de páginas detectadas
 
 2. **LEITURA DE LEGENDA E SÍMBOLOS**
    - Liste TODOS os símbolos encontrados na legenda
@@ -139,7 +126,7 @@ Retorne APENAS um objeto JSON válido seguindo esta estrutura:
     "ratio": 50
   },
   "projectName": "nome_se_encontrado",
-  "numPages": ${numPages},
+  "numPages": numero_de_paginas,
   "symbols": [
     {
       "code": "código",
@@ -206,16 +193,27 @@ IMPORTANTE:
 - Use conhecimento técnico de normas ABNT
 - Se não conseguir identificar algo, indique nas observações
 - Calcule áreas baseado na escala detectada
-- Identifique TODOS os pontos visíveis no projeto
-- Use o texto extraído para identificar legendas, cotas e anotações`;
+- Identifique TODOS os pontos visíveis no projeto`;
 
-        // Chama OpenAI com análise de texto
+      try {
         const response = await openai.chat.completions.create({
           model: 'gpt-4o',
           messages: [
             {
               role: 'user',
-              content: pdfPrompt
+              content: [
+                {
+                  type: 'text',
+                  text: pdfPrompt
+                },
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: dataUrl,
+                    detail: 'high'
+                  }
+                }
+              ]
             }
           ],
           max_tokens: 4000,
@@ -230,7 +228,7 @@ IMPORTANTE:
         return NextResponse.json(
           { 
             error: 'Erro ao processar PDF',
-            details: 'Não foi possível extrair informações do PDF. Verifique se o arquivo não está corrompido ou protegido por senha.'
+            details: 'Não foi possível analisar o PDF. Verifique se o arquivo não está corrompido ou protegido por senha.'
           },
           { status: 500 }
         );
